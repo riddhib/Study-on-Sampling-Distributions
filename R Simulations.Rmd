@@ -1,0 +1,523 @@
+---
+title: "Simulation Experiments for Sampling Distributions"
+output:
+  pdf_document: 
+    df_print: paged
+    keep_tex: true
+    number_sections: true
+  html_document: default
+  word_document: default
+toc: true
+link-citations: true
+geometry: margin=2cm
+linkcolor: blue
+fig_caption: true
+header-includes: 
+  \usepackage{booktabs}
+  \usepackage{wrapfig}
+  \usepackage{float}
+  \floatplacement{figure}{H}
+  \usepackage{lineno}
+  \usepackage{orcidlink}
+  \usepackage{xcolor}
+  \usepackage{color}
+  \usepackage{graphicx}
+  \usepackage{fixltx2e}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+\section{Sampling Distributions}
+
+\subsection{Constructing Sampling distributions Empirically}\label{Sec:ComputerSim}
+\subsubsection{Sampling distribution of the sample mean}
+In typical data science problems, we are interested to gain knowledge about some characteristics of a population that represents a real world scenario. To gain insights about those characteristics, a random sample (data set) has been drawn from it. Based on the sample, the population characteristics are computed. Let us discuss this in the light of an example.
+
+Suppose that we have a population which is characterized by a normal distribution with mean $\mu$ and variance $\sigma^2$. We are interested to estimate the population mean $\mu$ based on a sample of size $n$, denoted by $(X_1,X_2,\ldots,X_n)$. An analyst may choose to consider the average of the data values to estimate the value $\mu$ and compute the sample mean $\overline{X_n} = \frac{1}{n}\sum_{i=1}^n X_i$. Instead of going to the real world to collect the data, let us simulate the sample using \texttt{R}. We have learnt about the letter \texttt{r} which is useful in simulating random samples from the probability distributions. We fix the values of $\mu = 3$ and $\sigma = 1$. We simulate a sample of size $n = 20$ from the $\mathcal{N}(\mu,\sigma^2)$ and compute the value of sample mean $\overline{X_n}$. The following code will do this task.
+```{r} 
+n = 20                                             # sample size
+mu = 3                                             # population mean
+sigma = 1
+x = rnorm(n = 20, mean = mu, sd = sigma)           # sampling from the population
+x_bar = mean(x)                                    # sample mean
+cat("The value of the sample mean is: ", x_bar)
+```
+
+The point to be stressed here is that if the above piece of code is executed again, we will obtain different values of $\overline{X_n}$. In a classroom environment, a straightforward example is often demonstrated. Take, for instance, a physics experiment aiming to compute the gravitational constant, $g$. Despite students conducting the same experiment under nearly identical conditions, they inevitably produce varying sets of data. All students generate different sets of data values, so there is variation in the estimates of $g$ values among them. The statistics or mathematics lectures, however, usually begin with a coin-tossing experiment that neither students nor teachers perform. Students often grasp the concepts of probability through solving combinatorial problems, yet they may overlook the practical aspect of estimating probabilities through real experiments, such as those conducted in physics. Utilizing computer simulations can help students appreciate the variability inherent in sampling and better comprehend the estimation process. This hands-on approach can deepen their understanding and help bridge the gap between theory and application. For instance, repeatedly estimating the population mean using the sample mean ($\overline{X_n}$) from various random samples drawn from the same population can provide students with a foundation grasp of variation.
+
+We might also consider an alternative strategy as illustrated below: Suppose we have 30 students in your class and we would like to estimate the mean height of the class. If we take the measurements of height of all 30 students (assuming no measurement error) and average the results, you get the true mean value. In contrast, if we employ 5 students and ask them to randomly select 10 individuals and compute the sample mean. Here, we will obtain five (possibly) distinct values of $\overline{X_n}$, referred as sample mean. Therefore, it is widely acknowledged that when calculating specific characteristics of a sample with a limited sample size, the resulting value is susceptible to random fluctuations. These fluctuations predominantly arise from sampling variation.
+
+A natural question arises, how can we get an idea about the nature of the variation of $\overline{X_n}$ (say) in this context. It has been observed that drawing a large number of samples from a given population and constructing a histogram of these samples yields a representation that closely approximates the underlying probability density function. In particular, it is possible to infer the shape of the density function from the histogram. Therefore, we may take a strategy to understand the variations in $\overline{X_n}$ by drawing a histogram of $\overline{X_n}$ values which is computed from $(X_1,X_2,\ldots,X_n)$. To obtain several realizations from the distribution of $\overline{X_n}$, we repeat the above \texttt{R} code several times, say, $1000$ times and draw the histogram of these values(Fig. \ref{fig:hist}).
+
++ \textbf{R Codes: Construct histogram of sample means} \label{App: SDM}
+```{r hist, fig.align='center', fig.height=3.5, fig.width=3.5, fig.cap='The histogram is based on the 1000 replications of drawing a sample of size $n=20$ from the normal distribution with mean $3$ and standard deviation 1.'}
+mu=3
+sigma=1
+rep = 1000                                                # number of replications
+sample_means = numeric(length = rep)                      # to store 1000 sample means
+for(i in 1:rep){
+  x = rnorm(n = n, mean = mu, sd = sigma)                 # sample of size n
+  sample_means[i] = mean(x)                               # compute sample mean
+}
+hist(sample_means, probability = TRUE, main = paste("n = ", n),
+     xlab = expression(bar(X[n])), breaks = 30)              # histogram
+```
+From the shape of the distribution, we can make a guess that the variation in $\overline{X_n}$ may be captured by a normal distribution. In the literature, instead of calling the distribution of $\overline{X_n}$, it is referred as the \textbf{Sampling distribution of $\overline{X_n}$}. This is due to the fact that the random variable is a function of the random sample. In the example considered here, the population is assumed to follow a normal distribution. However, similar simulations can be conducted for different population probability distributions.
+
+```{r hist2, fig.align='center', fig.width=5, fig.cap='The histograms based on different number of replications of drawing a sample of size $n=20$ from the normal distribution with mean $3$ and standard deviation 1.'}
+par(mfrow=c(2,3))
+mu=3
+sigma=1
+rep_vals = c(1,5,10,50,100,500)                                        # number of replications
+for(j in 1:length(rep_vals)){
+  sample_means = numeric(length = rep_vals[j])   # to store sample means
+
+for(i in 1:rep_vals[j]){
+  x = rnorm(n = n, mean = mu, sd = sigma)                 # sample of size n
+  sample_means[i] = mean(x)                               # compute sample mean
+}
+hist(sample_means, probability = TRUE, main = paste("reps = ", rep_vals[j]),
+     xlab = expression(bar(X[n])), breaks = 30)              # histogram
+}
+
+```
+\subsubsection{Sampling Distribution of the Second Order Sample Moment} \label{App: Second}
+Let $X_1,X_2,\ldots,X_n$ be a random sample of size $n$ from the population density function $f(x)$.
+
++ The $r^{\scriptsize{\mbox{th}}}$ sample moment about $0$, denoted by $M_r'$, is defined as $$M_r' = \frac{1}{n}\sum_{i=1}^n X_i^r.$$
+It is easy to see that for $r=1$, we get the sample mean $\overline{X_n}$.
+
++ The $r^{\scriptsize{\mbox{th}}}$ sample moment about the sample mean $\overline{X_n}$, denoted by $M_r$, is defined to be $$M_r = \frac{1}{n}\sum_{i=1}^n \left(X_i-\overline{X_n}\right)^r.$$
+Since the sample moments are functions of random samples only, they are examples of statistic. 
+
++ The population moments are defined as $\mu_r' = E(X^r)$ and $\mu_r = E(X-\mu_1')^r$. For example, if the population is governed by the $\mathcal{N}(\mu, \sigma^2)$ distribution, then $\mu_1' = \mu$ and $\mu_2 = \sigma^2$. 
+
+It is important to keep in mind that the population moments may not always exist. In case of normal distribution all these moments exist, however there are many distributions, for which all or many population moments do not exist(example: Cauchy distribution).
+
+The sample moments play a critical role in approximating the population characteristics. Throughout our discussion, we have actually investigated the properties of $M_1' = \overline{X_n}$ in the context of estimating $\mu_1' = \mu$. Our simulation examples are based on the random samples drawn from the normally distributed population.
+
+Similarly, an analyst may consider $M_2$ to estimate the population variance $\sigma^2$. Intuitively, we can understand that the expectation symbol $E$ essentially performs averaging. The quantities $\mu_r$ are the population characteristics and these are fixed quantities. On the other hand $M_r$'s are sample characteristics and they are random variables.
+
+We try to visualize the sampling distribution of $M_2$ using computer simulation. We draw a sample of size $n$ from the normal distribution with mean $\mu$ and variance $\sigma^2$. For each sample, we compute the value of $M_2$ that is a realization from the sampling distribution of $M_2$. We fix the parameters as $\mu = 3$ and $\sigma = 1$ for simulation purpose. The process is carried out 1000 times to visualize the sampling distribution of $M_2$. From the histogram in (Fig. \ref{fig:histm2}., it is clear that it is not a bell shaped and a longer tail in the right is being observed. Such a shape is typically an indicator of positively skewed probability distributions. 
+
++ \textbf{R Codes: Sampling distribution of $M_2$}
+```{r, fig.align='center', fig.height=3.5, fig.width=3.5, fig.cap='\\label{fig:histm2} The histogram of $M_2$ values computed based on a sample of size $n=20$.'}
+n = 20                                                    # sample size
+mu = 3                                                    # population mean
+sigma = 1                                                 # population sd
+rep = 1000                                                # number of replication
+M2_vals = numeric(length = rep)
+for(i in 1:rep){
+  x = rnorm(n = n, mean = mu, sd = sigma)                 # simulation from normal distribution
+  M2_vals[i] = (1/n)*sum((x-mean(x))^2)                   # Compute M2
+}
+hist(M2_vals, probability = TRUE, xlab = expression(M[2]),
+     main = paste("n = ", n), breaks = 30)                # histogram
+```
+
+Let us investigate whether $M_2$ can be considered to estimate the population variance $\sigma^2$. To do that let us compute $M_2$ for different sample sizes and plot the values against the sample size as in (Fig. \ref{fig:samplem2}).The following code will do this.
+```{r samplem2, fig.align='center', fig.height=3.5, fig.width=3.5, fig.cap='It is clear from the figure that as the sample size $n$ increases, $M_2$ tends to the true population variance $\\sigma^2$.'}
+n_vals = 3:500                                            # different sample size
+M2_vals = numeric(length = length(n_vals))                # store the values of M2
+for(i in 1:length(n_vals)){
+  n = n_vals[i]                                           # extract sample size
+  x = rnorm(n = n, mean = mu, sd = sigma)                 # Simulation from normal
+  M2_vals[i] = (1/n)*sum((x-mean(x))^2)                   # Compute M2
+}
+plot(n_vals, M2_vals, type = "l", col = "#D55E00", lwd = 2,
+     xlab = "sample size (n)", ylab = expression(M[2]))   # plot M2 against sample size
+abline(h = sigma^2, lwd = 2, col = "#0072B2", lty = 2)       # true sigma2 
+legend("topright", expression(sigma^2), col = "#0072B2",
+       lwd = 2, lty = 2, bty ="n")
+```
+
+
+
+\subsection{Exploring the effect of sample size $n$}
+
+Intuitively, one can guess how the shape of the sampling distribution will change as the sample size $n$ increases. Now let us perform a thought experiment before writing the codes. Suppose, you are interested to estimate the mean height of the students of your class. Let us consider two schemes to check how the sample size $n$ impacts the accuracy of $\overline{X_n}$. 
+
+\subsubsection{\texttt{Scheme - I}}
+In the first scheme, you designate a student to draw a sample of size $2$ and compute the average $\overline{X_2}$. Then draw a sample of size $3$ and compute the average $\overline{X_3}$, and continue this experiment till $n=1000$. Now you plot the $\overline{X_n}$ values against $n$ and check how the plot behaves. Without doing any computation, you can guess that as the size of the sample increases you get more accuracy. In particular, for a finite population size, when you enumerate all the elements of the population, you actually hit the true mean value (Fig. \ref{fig:Scheme-I}).
+
++ \textbf{R Codes: Implementation of Scheme - I}\label{App:SS1}
+```{r Scheme-I, fig.align='center', fig.width=3.5, fig.height=3.5, fig.cap='\\label{fig:Scheme-I} From the Scheme - I, it is evident that the sample mean eventually converges to the population mean as the sample size increases. The population distribution is assumed to $\\mathcal{N}(3,2^2)$ for simulation purpose.'}
+# Implementation of Scheme - I
+mu=3
+sigma=2
+n_vals = 1:1000                                          # different sample size
+sample_means = numeric(length = length(n_vals))          # store sample means
+for (n in n_vals) {
+  x = rnorm(n = n, mean = mu, sd = sigma)                # sample of size n
+  sample_means[n] = mean(x)
+}
+plot(n_vals, sample_means, col = "#D55E00", lwd = 2,  
+     type = "l", xlab = "sample size (n)", 
+     ylab = expression(bar(X[n])))                       # plot sample means  
+abline(h = mu, col = "#0072B2", lty = 2, lwd = 3)           # true mean
+legend("topright", legend = "true mean", col = "#0072B2",
+       lty = 2, bty = "n", lwd = 3)                      # add legend
+```
+
+
+\subsubsection{\texttt{Scheme - II}}\label{sec:schemeII}
+In Scheme - I, it is to be noted that each of the estimates of the population mean $\mu$ for different sample sizes $n$ are subject to sampling variation. That means, if you repeat the Scheme- I once again, the same plot will not be generated. Therefore, instead of getting a single value, you planned to repeat the scheme - I 1000 times (say) so that for you have 1000 realizations of $\overline{X_2}$. Similarly from each of $\overline{X_3},\ldots, \overline{X_n}$, we have 1000 realizations. Now draw histograms for each $\overline{X_i}$s and investigate their shapes (Fig. \ref{fig:Scheme-II}). 
+
++ \textbf{R Codes: Implementation of Scheme - II}\label{App:SS2}
+```{r, fig.align='center', fig.height=5, fig.cap='\\label{fig:Scheme-II} From the Scheme - II, it is evident that as the sample size $n$ increases, the sampling distributions are getting very much App: Second $\\mu$. This essentially represents that as the sample size increases variation of $\\overline{X_n}$ decreases, that means estimates are more accurate. The population mean $\\mu$ is indicated with a red coloured filled circle. The population distribution is assumed to $\\mathcal{N}(3,2^2)$ for simulation purpose.' }
+# Implementation of Scheme - II
+mu=3
+sigma=2
+n_vals = 1:1000                                           # sample size
+rep = 1000                                               # number of replications
+list_sample_means = list(length = length(n_vals))        # store replicated samples means             
+for(n in n_vals){
+  sample_means = numeric(length = rep)                   # sample means for each replication
+  for(i in 1:rep){                                       # replication
+    x = rnorm(n = n, mean = mu, sd = sigma)
+    sample_means[i] = mean(x)
+  }
+  list_sample_means[[n]] = sample_means                  # 1000 sample means
+}
+# Visualize the histograms for n = 5, 10, 20, 30, 50, 100
+par(mfrow = c(2,3))
+for(n in c(5, 10, 20, 30, 50, 100)){
+  hist(list_sample_means[[n]], probability = TRUE, 
+       main = paste("n = ", n), xlab = expression(bar(X[n])),
+       xlim = c(1, 5))                                   # draw histograms
+  points(mu, 0, pch = 19, col = "#D55E00")
+}
+```
+\subsection{Exploring sampling distributions of common test statistics}\label{App: SD}
+The $\chi_p^2$, $t$, and $F_{p,q}$ sampling distributions are ubiquitous in statistical analysis, yet their derivation often involves intricate transformation formulas. In undergraduate statistics courses, students usually learn how to derive these distributions. However, in other disciplines, the distributions are often provided without explanation.
+To facilitate comprehension of sampling distributions, we have integrated computer simulations in the M.Sc. in Engineering Mathematics program at the Institute of Chemical Technology, Mumbai. These simulations demonstrate how $\chi_p^2$, $t$, and $F_{p,q}$ distributions capture variations in statistical characteristics of samples from normally distributed populations. Students observed the behavior of these distributions under various sample conditions, providing intuitive insights into their applications and significance. This approach alleviated the cognitive load associated with complex mathematical expressions, making the learning process more accessible and engaging. 
+
+\subsubsection{Student's $t$ distribution}
+
+Suppose $Z$ is a standard normal random variable and $Y$ is a $\chi^2$ random variable with $p$ degrees of freedom. Let $Z$  and $Y$ are independent random variables. Then the distribution of $X = \frac{Z}{\sqrt{Y/p}}$ follows a $t$ distribution with $p$ degrees of freedom whose density function is given by (denoted as $t_p$)
+\begin{equation}
+f(x) = \frac{\Gamma\left(\frac{p+1}{2}\right)}{\sqrt{p\pi}\Gamma\left(\frac{p}{2}\right)} \left(1+\frac{t^2}{p}\right)^{-\frac{p+1}{2}}, -\infty<x<\infty,
+\end{equation} where $\Gamma(\cdot)$ is the the gamma function. The following code can be used to simulate the random variables from the $t$ distribution by simulating random numbers from the normal distribution.
+
++ \texttt{(Step - I)} Simulate a random variable $Z \sim \mathcal{N}(0,1)$.
++ \texttt{(Step - II)} Simulate $Y\sim \chi_p^2$ independently of \texttt{Step - I} 
++ \texttt{(Step - III)} Compute $X = \frac{Z}{\sqrt{Y/p}}$
++ \texttt{(Step - IV)} Repeat the steps {\texttt{(I-III)}} $M = 10^6$ (say) times for getting $M$ realizations of $X$.
++ \texttt{(Step - V)} Draw the histogram of $X_m, m\in\{1,\ldots,M\}$ values and overlay $t_p$ density function (Fig~\ref{fig:t_PDF}).
+
+```{r, fig.align='center', fig.height=3.5, fig.width=3.5, fig.cap='\\label{fig:t_PDF} We simulate from the standard normal distribution and from the $\\chi_p^2$ distribution independently and apply the transformation as defined for the $t$ distribution. We used \\texttt{dt} function to overlay the exact density function of $t_p$.'}
+p = 10                                                   # degrees of freedom
+M = 10^6                                                 # number of random variables
+x = numeric(length = M)
+for( i in 1:M){
+  z = rnorm(n = 1, mean = 0, sd = 1)                     # simulation from n(0,1)
+  y = rchisq(n = 1, df = p)                              # simulation from chisq(p)
+  x[i] = z/sqrt(y/p)
+}
+hist(x, probability = TRUE, ylab  = expression(f[t[p]](x)),
+     main = " ")
+curve(dt(x, df = p), add =TRUE, col = "#D55E00", lwd = 2)    # overlay t density
+```
+
+It may be noted that the \texttt{Step - II} may be carried out in another way: Simulate $Z_1,Z_2,\ldots,Z_p$ independently from $\mathcal{N}(0,1)$ and compute $Y = Z_1^2 + \cdots + Z_p^2$.
+
+We list here some of the properties of the $t_p$ distribution. The mean and variance of $X$ is given by $$\mbox{E}(X) = 0,~~\mbox{if}~p>1,~~~Var(X) = \frac{p}{p-2},~~~\mbox{if}~~p>2.$$ Therefore, Student's $t$ distribution does not have moments of all orders. If there are $p$ degrees of freedom, then there are only $p-1$ moments. Hence, $t_1$ has no mean and $t_2$ has no variance.
+
+\subsubsection{Connection between normal and $t$ distribution}
+
+As the degrees of freedom $p$ increases, $t_p$ approximates the $\mathcal{N}(0,1)$ probability density function. Let $f(x|p)$ denote the probability density function of $X$ that follows the $t_p$ distribution. $$\lim_{p \to \infty}f(x|p) \rightarrow \frac{1}{\sqrt{2\pi}}e^{-x^2/2}$$ at each value of $x, ~-\infty<x<\infty$. This correctly suggests that as $p\to \infty$, $X$ converges in distribution to a $\mathcal{N}(0,1)$ random variable. This can be shown using Stirling's formula and the simulation is depicted in Fig~\ref{fig:tapprox}.
+
+```{r, fig.align='center', fig.height=3.5, fig.width=3.5, fig.cap='\\label{fig:tapprox} As the degrees of freedom increases, the $t_n$ distribution converges to the $\\mathcal{N}(0,1)$ distribution as $n\\to \\infty$.'}
+curve(dt(x, df = 3), col = "#D55E00", lwd = 2, -5, 5, 
+      ylim = c(0, 0.4), main = expression(t[n]), 
+      ylab = expression(f(x)))                               # t(3)
+curve(dt(x, df = 5), col = "#0072B2", lwd = 2, add = TRUE)      # t(5) 
+curve(dt(x, df = 10), col = "#009E73", lwd = 2, add = TRUE)
+curve(dnorm(x, mean = 0, sd = 1), col = "#CC79A7", 
+      add = TRUE, lwd = 2)                                   # n(0,1)
+legend("topright", c("n=3", "n=5", "n=10", "N(0,1)"), 
+       col = c("#D55E00", "#0072B2", "#009E73", "#CC79A7"), 
+       lwd = c(2,2,2), bty = "n", cex = 0.6)                            # add legend
+```
+
+
+\subsubsection{Snedecor's $F_{p,q}$ distribution}
+
+Let $U$ be a chi-square random variable with $p$ degrees of freedom; let $V$ be a chi-square random variable with $q$ degrees of freedom, and let $U$ and $V$ are independent. Then the random variable $X= \frac{U/p}{V/q}$ is distributed as an $F$ distribution with $p$ and $q$ degrees of freedom. The resulting density function is given by
+	$$f(x) = \frac{\Gamma \left(\frac{p+q}{2}\right)}{\Gamma\left(\frac{p}{2}\right)\Gamma\left(\frac{q}{2}\right)}\left(\frac{p}{q}\right)^{p/2}\frac{x^{p/2-1}}{\left[1+\frac{p}{q} x\right]^{\frac{p+q}{2}}},~~ 0<x<\infty,$$ and zero otherwise. Histograms of the simulated realizations from the $F_{5,9}$ distribution is shown in Fig. \ref{fig:F_PDF}. $F$ distribution plays a significant role in statistical data analysis particularly in the analysis of variance (ANOVA).
+```{r, fig.align='center', fig.height=3.5, fig.width=3.5, fig.cap='\\label{fig:F_PDF} We simulate from the $\\chi_p^2$ and $\\chi_q^2$ distributions independently and apply the transformation as defined for the $F$ distribution. We used \\texttt{df} function to overlay the exact density function of $F_{p,q}$.'}
+p = 5                                                 # degrees of freedom
+q = 9                                                 # 2nd degrees of freedom
+M = 1000                                              # number of simulation
+x = numeric(length = M)
+for (i in 1:M) {
+  U = rchisq(n = 1, df = p)                           # simulation from Chisq (df = p)
+  V = rchisq(n = 1, df = q)                           # simulation from Chisq (df = q)
+  x[i] = (U/p)/(V/q)
+}
+hist(x, probability = TRUE, main =bquote(paste("(p,q)"," = (",.(p),",",.(q),")" )),
+     breaks = 30)
+curve(df(x, df1 = p, df2 = q), add = TRUE, col = "#D55E00", 
+      lwd = 2, cex.lab = 1.4)
+```
+
+\section{Central Limit Theorem}
+
+\subsection{Conjecturing the Central Limit Theorem from visual patterns} \label{app:clt}
+The following R code illustrates the Central Limit Theorem for samples drawn from a Poisson distribution.
+```{r clt, fig.align='center', fig.height=3.5,fig.cap="\\label{fig: clt} Sampling distributions of the mean from Poisson($\\lambda = 2$) for various sample sizes. Histograms from 1000 samples are overlaid with normal curves to illustrate the Central Limit Theorem",echo=TRUE}
+lambda = 2
+par(mfrow = c(2,3))
+nvals = c(3, 5, 10, 25, 50, 100)
+rep = 1000
+for(n in nvals){
+  samplemean = numeric(length = rep)
+  for(i in 1:rep){
+    x = rpois(n = n, lambda = lambda) #samples drawn from Poisson distribution
+    samplemean[i] = mean(x)
+  }
+ hist(samplemean, probability = TRUE, breaks =30,
+ xlab = expression(bar(x)), main = paste("n = ", n))
+ curve(dnorm(x, mean = lambda, sd = sqrt(lambda/n)),add = TRUE, col = "#D55E00", lwd =2)
+ }
+```
+
+\subsection{Examining the applicability of the CLT}
+To reinforce conceptual understanding, the instructor extended the simulations to distributions where the Central Limit Theorem (CLT) does not hold, such as the Cauchy and Pareto distributions.
++ \textbf{R Codes: Sampling distirbution of means for standard Cauchy Distribution}
+```{r clt3, fig.align='center', fig.height=3.5,fig.cap="Sampling distributions of the mean from Standard Cauchy Distirbution for various sample sizes.",echo=TRUE}
+
+par(mfrow = c(2,2))
+nvals = c(30, 50, 100, 500)
+rep = 1000
+for(n in nvals){
+  samplemean = numeric(length = rep)
+  for(i in 1:rep){
+    x=rcauchy(n=nvals,location = 0,scale=1)
+    samplemean[i] = mean(x)
+  }
+ hist(samplemean, probability = TRUE, breaks =30,
+ xlab = expression(bar(x)), main = paste("n = ", n))
+ }
+```
+We observe that for the sampling distribution of the sample means for Standard Cauchy Distribution, extreme observations persist even for large n. The distribution of the sample mean does not seem to converge to a normal distribution. Students thought back about how the Cauchy distribution differs from the other distributions they had explored, identifying the absence of existence of mean as a key factor.CLT does not apply to distributions where the mean doesn't exist.
+
++ \textbf{R Codes: Sampling distribution of means for Pareto distribution with shape parameter=1 and location parameter =1}
+
+```{r clt4, fig.align='center', fig.height=3.5,fig.cap=" Sampling distributions of the mean from Pareto distribution with shape parameter=1 and location parameter =1 for various sample sizes.",echo=TRUE}
+
+library(EnvStats)
+par(mfrow = c(2,2))
+nvals = c(30, 50, 100, 500)
+rep = 1000
+for(n in nvals){
+  samplemean = numeric(length = rep)
+  for(i in 1:rep){
+    x=rpareto(n=nvals,location=1,shape=1)
+    samplemean[i] = mean(x)
+  }
+ hist(samplemean, probability = TRUE, breaks =30,
+ xlab = expression(bar(x)), main = paste("n = ", n))
+}
+
+```
+Here too the CLT does not apply as the mean doesnot exist for Pareto distribution with location and shape parameter 1. 
+The above code can be modified to generate the sampling distribution of the sample mean for Pareto Distribution with location parameter = 1 and shape parameter = 2. For this distribution, the variance is not finite, hence again the CLT is not applicable.Finally, for the Pareto distribution for location parameter = 1 and shape parameter = 3, the sampling distributions are well approximated by the normal distribution. CLT is applicable as both mean and variance exist and are finite.
+  
+
+
+
+\subsection{Consistent Estimators}
+The convergence of both $M_1$ and $M_2$ to the true value $\mu$ and $\sigma^2$ with increasing sample size led us to a very important concept in Statistics, \texttt{Consistency}. Roughly, if you are able to get hold of an estimator which is consistent, you get a guarantee that if you have reasonably large sample size, the value of your estimator is close to the true value. Based on the above discussion, we can have an algorithmic view of checking consistency of an estimator $T(X_1,\ldots,X_n)$ of $\theta$. This can be described as follows: \label{App: alg}
+
++ Choose an array of sample size $n$
++ For each $n$
+  - Simulate $(X_1,X_2,\ldots,X_n)$ from the population density $f(x)$
+  - Compute $T(X_1,X_2,\ldots,X_n) = t_n$, say
++ Plot the pairs $(n,t_n)$
++ Draw a horizontal line at $\theta$.
++ Check whether $t_n$ values get concentrated at $\theta$ as $n$ increases.
+
+Using the above algorithm, let us investigate another problem. Suppose that we have a random sample of size $n$ from the $\mbox{Uniform}(0,\theta)$ distribution where $\theta$ is a positive number. Our goal is to estimate the unknown parameter $\theta$. Suppose, we consider two estimators for estimating $\theta$, sample mean $(\overline{X_n})$ and the sample maximum $X_{(n)} = \max(X_1,X_2,\ldots,X_n)$. In the following \texttt{R} code, we implement the above algorithm for both these estimators. For the simulation study, we fix $\theta = 2$. Therefore, from the output, we need to check whether the values of these two estimators get concentrated about $2$ as the value of $n$ increases ((Fig. \ref{fig:cons}).).
+
++ \textbf{R Codes: Identifying consistent estimators} \label{App:cons}
+```{r cons, fig.height=3.5, fig.width=3.5, fig.align='center', fig.cap='It is evident from the simulation that the sample maximum $X_{(n)}$ is a consistent estimator of the parameter $\\theta$, whereas $\\overline{X_n}$ is not a consistent estimator of $\\theta$.'}
+theta = 2                                                  # population parameter
+n_vals = 1:200                                             # sample size
+sample_means = numeric(length = length(n_vals))            # store sample means
+sample_max = numeric(length = length(n_vals))              # store sample max
+for(n in n_vals){
+  x = runif(n = n, min = 0, max = theta)                   # sample from uniform(0, theta)
+  sample_means[n] = mean(x)                                # sample mean
+  sample_max[n] = max(x)                                   # sample maximum
+}
+plot(n_vals, sample_max, col = "#D55E00", type = "l", ylab = "T",
+     ylim = c(0.3, theta+0.2), xlab = "sample size (n)")     # plot sample max
+lines(n_vals, sample_means, col = "#009E73", type = "l")   # plot sample means
+abline(h = theta, col = "#0072B2", lty = 2, lwd = 2)          # true value
+legend("bottomright", col = c("#D55E00", "#009E73", "#0072B2"), lwd = c(1,1,2), lty = c(1,1,2),
+       bty = "n", legend = c(expression(X[(n)]), expression(bar(X[n])), expression(theta)),
+       cex = 0.8)  
+```
+
+\subsection{Unbiased Estimators}
+
+An estimator $T(X_1,\ldots,X_n)$ of $\theta$ is called unbiased if $\mbox{E}(T) = \theta$ for all $\theta \in \Theta$; $\Theta$ denotes the set of possible values taken by $\theta$, also called the parameter space. Let us understand this definition in an intuitive way. Let us go back to the estimation of $\mu$, the population mean by sample mean $\overline{X_n}$. When we say that $\mbox{E}(\overline{X_n}) = \mu$, what does this really mean? We have mentioned that expectation is intuitively an averaging. We can interpret this term $\mbox{E}(\overline{X_n})$ in an algorithmic way, as stated below:
+
++ \texttt{(Step - I)} Fix the values of $\mu$ and $\sigma^2$. Fix sample size $n$.
++ \texttt{(Step - II)} Simulate $(X_1,X_2,\ldots,X_n)$ from $\mathcal{N}(\mu, \sigma^2)$ and compute $\overline{X_n}$.  
++ \texttt{(Step - III)} Repeat the previous \texttt{(Step - II)} a very large number of times (say $M = 10^5$) and evaluate $\overline{X_n}^{(1)}, \ldots, \overline{X_n}^{(10^5)}$
++ \texttt{(Step - IV)} Compute the average $\frac{1}{M}\sum_{m=1}^M\overline{X_n}^{(m)}$
++ \texttt{(Step - V)} Check whether $\frac{1}{M}\sum_{m=1}^M\overline{X_n}^{(m)}$ is approximately equal to $\mu$.
+
+The above algorithm can be used for any other probability distribution and for any other estimator. Let us investigate here whether $M_1$ and $M_2$ are unbiased estimators of $\mu$ and $\sigma^2$. You are encouraged to recollect the \texttt{Scheme - II} (Section~\ref{sec:schemeII}) that we have discussed. In the following, we implement the above algorithm for $n = 20$. The values of $\mu$ and $\sigma$ are kept as $3$ and $1$, respectively. To be more precise with our understanding we implement this for $n =\{5,10,20\}$ as well (Fig. \ref{fig:SampleMean_Unbiased}). It is observed in Fig. \ref{fig:SampleMean_Ubiased} that the average of the sample mean values obtained from the repeated sampling of the normal distribution coincides with the true population mean $(\mu)$.
+
+\subsubsection{R Codes: Signature of unbiased estimators} \label{App:unbias}
+```{r, fig.height=3.5, fig.align='center', fig.cap='\\label{fig:SampleMean_Unbiased}For all sample size $n$, the average value of $\\overline{X_n}$ is well in agreement with the true value of the population mean $\\mu$. This gives an indication that the sample mean is an unbiased estimator of the population mean. The true value is indicated by the blue dot and the estimated value is marked as orange circle.'}
+mu=3
+sigma=2
+n_vals = c(5, 10, 20,30,50,100)                                     # sample sizes
+rep = 10^5                                                # number of replications
+list_sample_means = list(length(n_vals))                  # store sample means
+for (i in 1:length(n_vals)) {
+  n = n_vals[i]                                           # extract sample size
+  sample_means = numeric(length = rep)                    # store sample mean values
+  for(j in 1:rep){
+    x = rnorm(n = n, mean = mu, sd = sigma)               # simulation from normal distribution
+    sample_means[j] = mean(x) 
+  }
+  list_sample_means[[i]] = sample_means                   # store 10^5 sample means
+}
+par(mfrow = c(2,3))
+for(i in 1:length(n_vals)){
+  n = n_vals[i]
+  hist(list_sample_means[[i]], probability = TRUE, 
+       main = paste("n = ", n), xlab = bquote(bar(X[.(n)])))
+  points(mu, 0, pch = 19, col = "#0072B2", cex = 1)         # true mean
+  points(mean(list_sample_means[[i]]), 0, pch = 1, 
+         col = "#D55E00", lwd = 2, cex = 2)
+  legend("topleft", col = c("#0072B2", "#D55E00"), 
+         legend = c(expression(mu), expression(E(bar(X[n])))), 
+         bty = "n", pch = c(19, 1))                     # add legend
+}
+```
+
+
+
+Let us investigate the algorithm for checking whether $M_2$ is an unbiased estimator of $\sigma^2$. 
+\subsubsection{R Codes: Signature of asymptotic unbiasedness}\label{App:bias}
+```{r, fig.height=3.5, fig.align='center', fig.cap='\\label{fig:bias_M2} For all sample size $n$, the average value of $M_2$ by taking a large number of replications is not approximately equal to $\\sigma^2$. The red circle always lies in the left of the true value (blue dot), representing a negative bias. However as $n$ increases the distance between them decreases and they seem to have a close agreement for large sample size $n$.'}
+mu=3
+sigma=2
+n_vals = c(5, 10, 20)                                     # sample sizes
+rep = 10^5                                                # number of replications
+list_M2_vals = list(length(n_vals))                       # store 2nd order raw moment
+for (i in 1:length(n_vals)) {
+  n = n_vals[i]                                           # extract sample size
+  M2_vals = numeric(length = rep)                         # store 2nd order raw moment
+  for(j in 1:rep){
+    x = rnorm(n = n, mean = mu, sd = sigma)               # simulation from normal distribution
+    M2_vals[j] = (1/n)*sum((x-mean(x))^2)
+  }
+  list_M2_vals[[i]] = M2_vals                             # store 10^5 2nd raw moment
+}
+par(mfrow = c(2,3))
+for(i in 1:length(n_vals)){
+  n = n_vals[i]                                           # extract sample size
+  hist(list_M2_vals[[i]], probability = TRUE, 
+       main = paste("n = ", n), xlab = expression(M[2])) # Sampling distribution of M2
+  points(sigma^2, 0, pch = 19, col = "#0072B2", cex = 1)      # true variance
+  points(mean(list_M2_vals[[i]]), 0, pch = 1, 
+         col = "#D55E00", lwd = 2, cex = 1.5)                # expectation of M2
+  legend("topright", col = c("#0072B2", "#D55E00"), 
+         legend = c(expression(sigma^2), expression(E(M[2]))), 
+         bty = "n", pch = c(19, 1))                       # add legend
+}
+```
+
+From the simulation studies, we get an indication that the sample mean is an unbiased estimator of the population mean, whereas $M_2$ is not an unbiased estimator of $\sigma^2$. In addition, the expected value always seems to be lower than the true value, thereby, giving a negative bias. You are expected to modify the above \texttt{R} codes and do this experiment with different choices of $\mu$ and $\sigma^2$. This will be helpful to realize the fact that the above observation is true for any values of $\mu$ and $\sigma^2$.
+
+The bias of an estimator is defined as the expected value of the estimator minus the true value, that is $\mbox{bias}(T) = \mbox{E}(T) - \theta$. You are encouraged to compute the $\mbox{E}\left(\overline{X_n}\right)$ and $\mbox{E}\left(M_2\right)$ theoretically and show that the $\mbox{bias}(\overline{X_n}) = 0$ and $\mbox{bias}\left(M_2\right) = -\frac{\sigma^2}{n}$. From the expression of $\mbox{bias}(M_2)$ it is evident that as the sample size $n$ increases, bias tends to zero. Statisticians refer to this fact as the estimator $M_2$ being asymptotically unbiased ($-\frac{\sigma^2}{n}\to 0$ as $n\to \infty$). This is also observed in the simulation studies that as the sample size ($n$) increases the difference between the average values of realizations from the sampling distribution of $M_2$ and $\sigma^2$ reduces and eventually collide. The blue dot eventually enters inside the red circle (Fig. \ref{fig:bias_M2})
+
+\subsection{Non-Existence of Moments} (\label{fig:Cauchy_Mean})
+
+The expectation of a random variable is usually considered as a mathematical concept which is computed using either by evaluating an integration problem or computing a sum of a series for continuous and discrete random variables, respectively. Students understand them as a mathematical concepts only and solve several problems without understanding there implications.
+
+A simulation based approach may be helpful for the students to verify whether expectation of a random variable exists or not. In the simulation experiments we observed that the sampling distribution of the sample mean gets highly concentrated about the population mean. Certainly, in this case, the population distribution has a finite mean $\mu$. A natural question arises, if the population mean does not exist, how would the sample mean $\overline{X_n}$ behave for a fixed $n$. A common classroom example is the Cauchy distribution for which the expectation does not exist. Using simulation, we investigate the sampling distributions of $\overline{X_n}$ (Fig. \ref{fig:Cauchy_Mean}).
+
++ \textbf{R Codes: Signature of nonexistence of moments}
+```{r, fig.height=3.5, fig.cap="\\label{fig:Cauchy_Mean} The simulations clearly suggests that the sampling distributions of $\\overline{X_n}$ is not concentrated about the location parameter $\\mu$. The histograms of the sample mean values have been drawn based on $M=1000$ repetitive drawing of a sample of size $n$."}
+par(mfrow = c(1,3))
+n_vals = c(10, 20, 50)                        # Different sample sizes
+M = 1000
+mu = 0                                        # location parameter
+for(n in n_vals){
+  sample_means = numeric(length = M)
+  for(i in 1:M){
+    x = rcauchy(n = n, location = mu, scale = 1)
+    sample_means[i] = mean(x)
+  }
+  hist(x, probability = TRUE, xlab = expression(bar(X[n])),
+       breaks = 30, main = paste("n = ", n))
+  points(mu, 0, pch = 19, col = "#0072B2", cex = 1.4, lwd = 2)
+  points(mean(sample_means), 0, col = "#D55E00", 
+         pch = 1, cex = 2)
+  legend("topright", bty = "n", legend = c(expression(mu), bquote(bar(X[.(n)]))),
+         pch = c(19,1), col = c("#0072B2", "#D55E00"), cex = c(1.4, 1.4))
+}
+```
+
+The problem can be continued further. If $X\sim \mathcal{C}(0,1)$, then $\mbox{E}|X|^{\alpha}$ exists for $\alpha<1$ and does not exist for $\alpha\ge 1$. Using computer simulations this idea can be explored to understand the statistical ideas more intuitively (Fig. \ref{fig:CauchyMoment}).
+
++ Fix $\alpha\in (0,1)$ and sample size $n$.
++ Simulate $X_1,X_2,\ldots,X_n \sim \mathcal{C}(0,1)$.
++ Compute $Y_1 = |X_1|^{\alpha},Y_2 = |X_2|^{\alpha},\ldots,Y_n = |X_n|^{\alpha}$.
++ Compute $\overline{Y_n} = \frac{1}{n}\sum_{i=1}^n Y_i$.
++ Repeat previous three steps $M=10^3$ times (say) to obtain $\overline{Y_n}^{(1)}, \ldots,\overline{Y_n}^{(M)}$.
++ Draw the histogram and mark the average of $\overline{Y_n}$ values, $\overline{\overline{Y_n}}$ (say).
+
+Using numerical integration (\texttt{integrate()} function in \texttt{R}), the expected value $\mbox{E}\left|X\right|^{\alpha}=\int_{-\infty}^{\infty}|x|^{\alpha}\frac{1}{\pi (1+x^2)}dx \approx 1.236068$ for $\alpha = 0.5$. The following R code snippet is used to execute the above steps. 
+
++ \textbf{R Codes: Shape of sampling distribution when moments do not exist}
+```{r, fig.align='center', fig.height=5, fig.cap = '\\label{fig:CauchyMoment} The sampling distriution of $\\overline{Y_n}=\\overline{|X_n|^{\\alpha}}$ for $\\alpha \\in(0,1)$. As the sample size increases, the histograms are highly concetrated about the value $\\mbox{E}\\left(|X|^{\\alpha}\\right) \\approx  1.236068$ which is represented using blue dot.'}
+par(mfrow = c(2,3))
+alpha = 0.5
+h = function(x){
+  (abs(x)^alpha)*dcauchy(x)
+}
+n_vals = c(10, 20, 50, 100, 300, 500)         # Different sample sizes
+M = 1000
+mu = 0                                        # location parameter
+for(n in n_vals){
+  power_means = numeric(length = M)
+for(i in 1:M){
+  x = rcauchy(n = n, location = mu, scale = 1)
+  power_means[i] = mean(abs(x)^alpha)
+}
+hist(power_means, probability = TRUE, xlab = expression(bar(Y[n])),
+     breaks = 30, main = paste("n = ", n))
+points(integrate(h, -Inf, +Inf)$value, 0, 
+       col = "#0072B2", pch = 19, cex = 1.2)
+}
+```
+In the above scheme, we have explicitly simulated the sampling distribution of the absolute $\alpha$th order sample mean when sampling from the standard Cauchy distribution. In the following we perform this exercise for different values of $n$ and different values of $\alpha \in \{0.5, 1, 1.5\}$ and check how the $\alpha$th order absolute sample mean $\overline{|X_n|^{\alpha}}$ behaves as $n$ increases (Fig. \ref{fig:alpha_n}).
+
++ \textbf{R Codes: Connecting convergence and existence of moments} \label{App:Cauchy_Mean}
+```{r, fig.align='center', fig.height=3.5, fig.cap="\\label{fig:alpha_n} As the sample size increases the $\\alpha$th order sample mean converges to the $\\alpha$th order population mean for $\\alpha\\in(0,1)$. However, for $\\alpha \\ge 1$, the mean does not converge in probability. Nonconvergent behaviour of the $\\overline{|X_n|^{\\alpha}}$ is due the nonexistence of the absolute mean of order $\\alpha$ with $\\alpha>1$."}
+par(mfrow = c(1,3))
+n_vals = 1:1000                           # increasing sample size
+alpha_vals = c(0.5, 1, 1.5)               # order of the moment
+for(alpha in alpha_vals){
+  sample_means = numeric(length = length(n_vals))
+  for (n in n_vals) {
+    x = rcauchy(n = n, location = 0, scale = 1)
+    sample_means[n] = mean(abs(x)^alpha)  # compute alpha-th order mean
+  }
+  plot(n_vals, sample_means, type = "l", col = "#D55E00", lwd = 2,
+       xlab = "sample size (n)", ylab = expression(bar(abs(X[n])^alpha)),
+       main = bquote(paste(alpha, " = ", .(alpha))),
+       cex.main = 1.4)
+}
+
+```   
