@@ -327,38 +327,114 @@ The above code can be modified to generate the sampling distribution of the samp
   
 
 
-
 \subsection{Consistent Estimators}
-The convergence of both $M_1$ and $M_2$ to the true value $\mu$ and $\sigma^2$ with increasing sample size led us to a very important concept in Statistics, \texttt{Consistency}. Roughly, if you are able to get hold of an estimator which is consistent, you get a guarantee that if you have reasonably large sample size, the value of your estimator is close to the true value. Based on the above discussion, we can have an algorithmic view of checking consistency of an estimator $T(X_1,\ldots,X_n)$ of $\theta$. This can be described as follows: \label{App: alg}
+The convergence of both $M_1$ and $M_2$ to the true value $\mu$ and $\sigma^2$ with increasing sample size led us to a very important concept in Statistics, \texttt{Consistency}. For a random sample $(X_1,X_2 \ldots X_n)$ drawn from a population with probability density function $f(x;\theta)$, let $T_n$ be an estimator of the parameter $\theta$. We say that $T_n$ is consistent if, for every $\epsilon >0$, $P_\theta(\mid T_n - \theta \mid > \epsilon ) \rightarrow 0$ as $n\rightarrow \infty$. Based on the above definition, we can have an algorithmic view of checking consistency of an estimator $T(X_1,\ldots,X_n)$ of $\theta$. This can be described as follows: \label{App: alg}
 
-+ Choose an array of sample size $n$
-+ For each $n$
-  - Simulate $(X_1,X_2,\ldots,X_n)$ from the population density $f(x)$
-  - Compute $T(X_1,X_2,\ldots,X_n) = t_n$, say
-+ Plot the pairs $(n,t_n)$
-+ Draw a horizontal line at $\theta$.
-+ Check whether $t_n$ values get concentrated at $\theta$ as $n$ increases.
+* Choose an array of values of $\epsilon$
+* For each $\epsilon$
+  + Choose an array of sample size $n$
+  + For each $n$
+    - Simulate $B$ independent samples from the population density $f(x;\theta)$
+    - For each sample, compute the estimator $T_n$ to obtain $B$ many estimates say   $(t_n^{(1)},t_n^{(2)} \ldots t_n^{(B)})$
+    - Compute the proportion of simulated estimates out of the $B$ estimates with values in the range $(\theta - \epsilon, \theta + \epsilon )$
+    - This proportion represents the estimated $\hat{P}_{n,\theta}}(\mid T_n - \theta \mid > \epsilon )$
++ Plot the pairs $(n,\hat{P_{n,\theta}})$
++ Draw a horizontal line at $\0$.
+* Check whether $\hat{P_{n,\theta}}$ values get concentrated at $0$ as $n$ increases for all $\epsilon$
 
 Using the above algorithm, let us investigate another problem. Suppose that we have a random sample of size $n$ from the $\mbox{Uniform}(0,\theta)$ distribution where $\theta$ is a positive number. Our goal is to estimate the unknown parameter $\theta$. Suppose, we consider two estimators for estimating $\theta$, sample mean $(\overline{X_n})$ and the sample maximum $X_{(n)} = \max(X_1,X_2,\ldots,X_n)$. In the following \texttt{R} code, we implement the above algorithm for both these estimators. For the simulation study, we fix $\theta = 2$. Therefore, from the output, we need to check whether the values of these two estimators get concentrated about $2$ as the value of $n$ increases ((Fig. \ref{fig:cons}).).
 
 + \textbf{R Codes: Identifying consistent estimators} \label{App:cons}
-```{r cons, fig.height=3.5, fig.width=3.5, fig.align='center', fig.cap='It is evident from the simulation that the sample maximum $X_{(n)}$ is a consistent estimator of the parameter $\\theta$, whereas $\\overline{X_n}$ is not a consistent estimator of $\\theta$.'}
+```{r cons, fig.height=5, fig.width=8, fig.align='center', fig.cap='It is evident from the simulation that the sample maximum $X_{(n)}$ is a consistent estimator of the parameter $\\theta$, whereas $\\overline{X_n}$ is not a consistent estimator of $\\theta$.'}
+
+eps_vals=c(1, 0.5, 0.1,0.05)   # array of different epsilon values  
 theta = 2                                                  # population parameter
-n_vals = 1:200                                             # sample size
-sample_means = numeric(length = length(n_vals))            # store sample means
-sample_max = numeric(length = length(n_vals))              # store sample max
-for(n in n_vals){
-  x = runif(n = n, min = 0, max = theta)                   # sample from uniform(0, theta)
-  sample_means[n] = mean(x)                                # sample mean
-  sample_max[n] = max(x)                                   # sample maximum
+n_vals = 1:250                                             # sample sizes
+B = 100                                                    # number of samples and estimators for each n
+
+par(mfrow = c(2,2), mar = c(5, 7, 4, 2))
+prob_means = numeric(length = length(n_vals))            # store sample means
+prob_max = numeric(length = length(n_vals))              # store sample max
+for (eps in eps_vals){
+  for(n in n_vals){
+    count_means= 0
+    count_max=0
+    for (i in 1:B){
+      x = runif(n = n, min = 0, max = theta)                   # sample from uniform(0, theta)
+      if(mean(x)> theta+eps || mean(x)<theta-eps){
+        count_means=count_means+1
+      }
+      if(max(x)> theta+eps || max(x)<theta-eps){
+        count_max=count_max+1
+      }
+      prob_means[n]=count_means/B
+      prob_max[n] = count_max/B
+      
+    }
+  }
+  plot(n_vals, prob_max, col = "#0072B2", type = "l", 
+       ylab = expression(widehat(P)[n*","*theta] * "(" * "|" * T[n] - theta * "|" > epsilon * ")"),
+       ylim = c(-0.1,1.1), xlab = "sample size (n)",lwd=2, 
+       main = bquote(epsilon == .(eps)))     # plot sample max
+  lines(n_vals, prob_means, col = "#D55E00", type = "l",lwd=2)   # plot sample means
+  
+  #abline(h = 0, col = "#0072B2", lty = 2, lwd = 2)          # true value
+  
+  
 }
-plot(n_vals, sample_max, col = "#D55E00", type = "l", ylab = "T",
-     ylim = c(0.3, theta+0.2), xlab = "sample size (n)")     # plot sample max
-lines(n_vals, sample_means, col = "#009E73", type = "l")   # plot sample means
-abline(h = theta, col = "#0072B2", lty = 2, lwd = 2)          # true value
-legend("bottomright", col = c("#D55E00", "#009E73", "#0072B2"), lwd = c(1,1,2), lty = c(1,1,2),
-       bty = "n", legend = c(expression(X[(n)]), expression(bar(X[n])), expression(theta)),
-       cex = 0.8)  
+legend("right", col = c("#D55E00", "#0072B2"), lwd = c(2,2), lty = c(1,1),
+       bty = "n", legend = c(expression(bar(X[n])), expression(X[(n)])),
+       cex = 0.8)
+
+```
+In the simulation below, we see that the boxplots of empirically obtained values of two estimators viz. sample mean and the sample maximum for increasing sample sizes show the concentration of the sampling distributions around $\theta$. This provides a visual illustration of convergence in probability when the distributions concentrate around the true parameter. We note that for the sample maximum, the boxplots become narrower with increasing sample size and approach the true population value($\theta$ = 2) but typically underestimate it. And in contrast, we can also observe that even though the distribution of the sample means visible in the boxplots become narrower with increasing sample size, they do not concentrate around the true poopulation parameter. This highlights that decreasing variability alone is not sufficient for an estimator to be consistent; the sampling distribution must also concentrate around the true parameter.
+
+```{r cons2, fig-cap: "Boxplots of the sampling distributions of (a) the sample mean and (b) the sample maximum, based on 100 independent samples for each sample size n, drawn from a Uniform(0, theta) distribution with theta = 2. The sample mean becomes increasingly concentrated around 1, rather than the true parameter theta = 2, whereas the sample maximum becomes increasingly concentrated around theta. This illustrates the consistency of the sample maximum and the inconsistency of the sample mean as estimators of theta. The red dashed line indicates the true parameter value theta = 2.", fig-width= 10, fig-height= 8}
+
+theta = 2
+n_vals = c(5, 10, 20, 40, 60, 80, 100, 150, 200, 250)
+B = 100
+
+est_means = list()
+est_max = list()
+
+for(n in n_vals){
+  means = numeric(length=B)
+  maxs = numeric(length=B)
+  
+  for(i in 1:B){
+    x = runif(n, min = 0, max = theta)
+    means[i] = mean(x)
+    maxs[i] = max(x)
+  }
+  
+  est_means[[as.character(n)]] = means
+  est_max[[as.character(n)]] = maxs
+}
+
+par(mfrow = c(1,2), mar = c(5,4,4,2))
+
+# Boxplots of sample means
+boxplot(est_means, 
+        names = n_vals,
+        col = "#0072B2",
+        xlab = "Sample size (n)",
+        ylab = expression(bar(X)[n]),
+        main = "Sample Mean",
+        ylim=c(0,2.1))
+
+abline(h = theta, col = "red", lwd = 2, lty = 2)
+
+# Boxplots of sample maximums
+boxplot(est_max,
+        names = n_vals,
+        col = "#D55E00",
+        xlab = "Sample size (n)",
+        ylab = expression(X[(n)]),
+        main = "Sample Maximum")
+
+abline(h = theta, col = "red", lwd = 2, lty = 2)
+
 ```
 
 \subsection{Unbiased Estimators}
@@ -403,8 +479,6 @@ for(i in 1:length(n_vals)){
 }
 ```
 
-
-
 Let us investigate the algorithm for checking whether $M_2$ is an unbiased estimator of $\sigma^2$. 
 \subsubsection{R Codes: Signature of asymptotic unbiasedness}\label{App:bias}
 ```{r, fig.height=3.5, fig.align='center', fig.cap='\\label{fig:bias_M2} For all sample size $n$, the average value of $M_2$ by taking a large number of replications is not approximately equal to $\\sigma^2$. The red circle always lies in the left of the true value (blue dot), representing a negative bias. However as $n$ increases the distance between them decreases and they seem to have a close agreement for large sample size $n$.'}
@@ -422,7 +496,7 @@ for (i in 1:length(n_vals)) {
   }
   list_M2_vals[[i]] = M2_vals                             # store 10^5 2nd raw moment
 }
-par(mfrow = c(2,3))
+par(mfrow = c(1,3))
 for(i in 1:length(n_vals)){
   n = n_vals[i]                                           # extract sample size
   hist(list_M2_vals[[i]], probability = TRUE, 
@@ -444,7 +518,8 @@ The bias of an estimator is defined as the expected value of the estimator minus
 
 The expectation of a random variable is usually considered as a mathematical concept which is computed using either by evaluating an integration problem or computing a sum of a series for continuous and discrete random variables, respectively. Students understand them as a mathematical concepts only and solve several problems without understanding there implications.
 
-A simulation based approach may be helpful for the students to verify whether expectation of a random variable exists or not. In the simulation experiments we observed that the sampling distribution of the sample mean gets highly concentrated about the population mean. Certainly, in this case, the population distribution has a finite mean $\mu$. A natural question arises, if the population mean does not exist, how would the sample mean $\overline{X_n}$ behave for a fixed $n$. A common classroom example is the Cauchy distribution for which the expectation does not exist. Using simulation, we investigate the sampling distributions of $\overline{X_n}$ (Fig. \ref{fig:Cauchy_Mean}).
+A simulation based approach may be helpful for the students to examine whether expectation of a random variable exists or not. In the simulation experiments we observed that the sampling distribution of the sample mean gets highly concentrated about the population mean. Certainly, in this case, the population distribution has a finite mean $\mu$. A natural question arises, if the population mean does not exist, how would the sample mean $\overline{X_n}$ behave for a fixed $n$. A common classroom example is the Cauchy distribution for which the expectation does not exist. Using simulation, we investigate the sampling distributions of $\overline{X_n}$ (Fig. \ref{fig:Cauchy_Mean}).
+
 
 + \textbf{R Codes: Signature of nonexistence of moments}
 ```{r, fig.height=3.5, fig.cap="\\label{fig:Cauchy_Mean} The simulations clearly suggests that the sampling distributions of $\\overline{X_n}$ is not concentrated about the location parameter $\\mu$. The histograms of the sample mean values have been drawn based on $M=1000$ repetitive drawing of a sample of size $n$."}
@@ -454,17 +529,22 @@ M = 1000
 mu = 0                                        # location parameter
 for(n in n_vals){
   sample_means = numeric(length = M)
+  # sample_max = numeric(length = M)
   for(i in 1:M){
     x = rcauchy(n = n, location = mu, scale = 1)
     sample_means[i] = mean(x)
+   # sample_max[i]=max(x)
   }
-  hist(x, probability = TRUE, xlab = expression(bar(X[n])),
+  hist(sample_means, probability = TRUE, xlab = expression(bar(X[n])),
        breaks = 30, main = paste("n = ", n))
+  
   points(mu, 0, pch = 19, col = "#0072B2", cex = 1.4, lwd = 2)
   points(mean(sample_means), 0, col = "#D55E00", 
          pch = 1, cex = 2)
   legend("topright", bty = "n", legend = c(expression(mu), bquote(bar(X[.(n)]))),
          pch = c(19,1), col = c("#0072B2", "#D55E00"), cex = c(1.4, 1.4))
+  
+  
 }
 ```
 
@@ -480,7 +560,7 @@ The problem can be continued further. If $X\sim \mathcal{C}(0,1)$, then $\mbox{E
 Using numerical integration (\texttt{integrate()} function in \texttt{R}), the expected value $\mbox{E}\left|X\right|^{\alpha}=\int_{-\infty}^{\infty}|x|^{\alpha}\frac{1}{\pi (1+x^2)}dx \approx 1.236068$ for $\alpha = 0.5$. The following R code snippet is used to execute the above steps. 
 
 + \textbf{R Codes: Shape of sampling distribution when moments do not exist}
-```{r, fig.align='center', fig.height=5, fig.cap = '\\label{fig:CauchyMoment} The sampling distriution of $\\overline{Y_n}=\\overline{|X_n|^{\\alpha}}$ for $\\alpha \\in(0,1)$. As the sample size increases, the histograms are highly concetrated about the value $\\mbox{E}\\left(|X|^{\\alpha}\\right) \\approx  1.236068$ which is represented using blue dot.'}
+```{r, fig.align='center', fig.height=5, fig.cap = '\\label{fig:CauchyMoment} The sampling distriution of $\\overline{Y_n}=\\overline{|X_n|^{\\alpha}}$ for $\\alpha \\in(0,1)$. As the sample size increases, the histograms are concentrated about the value $\\mbox{E}\\left(|X|^{\\alpha}\\right) \\approx  1.4142$ which is represented using blue dot.'}
 par(mfrow = c(2,3))
 alpha = 0.5
 h = function(x){
@@ -501,23 +581,39 @@ points(integrate(h, -Inf, +Inf)$value, 0,
        col = "#0072B2", pch = 19, cex = 1.2)
 }
 ```
-In the above scheme, we have explicitly simulated the sampling distribution of the absolute $\alpha$th order sample mean when sampling from the standard Cauchy distribution. In the following we perform this exercise for different values of $n$ and different values of $\alpha \in \{0.5, 1, 1.5\}$ and check how the $\alpha$th order absolute sample mean $\overline{|X_n|^{\alpha}}$ behaves as $n$ increases (Fig. \ref{fig:alpha_n}).
+In the above scheme, we have explicitly simulated the sampling distribution of the absolute $\alpha$th order sample moment when sampling from the standard Cauchy distribution. In the following we perform this exercise for different values of $n$ and different values of $\alpha \in \{0.5, 1, 1.5\}$ and check how the $\alpha$th order absolute sample moment $\overline{|X_n|^{\alpha}}$ behaves as $n$ increases (Fig. \ref{fig:alpha_n}).
 
 + \textbf{R Codes: Connecting convergence and existence of moments} \label{App:Cauchy_Mean}
-```{r, fig.align='center', fig.height=3.5, fig.cap="\\label{fig:alpha_n} As the sample size increases the $\\alpha$th order sample mean converges to the $\\alpha$th order population mean for $\\alpha\\in(0,1)$. However, for $\\alpha \\ge 1$, the mean does not converge in probability. Nonconvergent behaviour of the $\\overline{|X_n|^{\\alpha}}$ is due the nonexistence of the absolute mean of order $\\alpha$ with $\\alpha>1$."}
-par(mfrow = c(1,3))
+```{r, fig.align='center', fig.height=3.5, fig.cap="\\label{fig:alpha_n} As the sample size increases the $\\alpha$th order absolute sample moment converges in probability to the $\\alpha$th order absolute population moment for $\\alpha\\in (0,1)$. However, for $\\alpha \\geq 1$, the sample moment doesnot converge to a finite value. Nonconvergent behaviour of the $\\overline{|X_n|^{\\alpha}}$ is due the nonexistence of the population absolute moment of order $\\alpha$ with $\\alpha \\geq 1$.The fourth panel shows the maximum absolute observation in each sample, highlighting the occurrence of extreme values."}
+
+par(mfrow = c(1, 4),
+    mar = c(4, 3.5, 3, 1),
+    oma = c(0, 1.5, 0, 0),
+    mgp = c(2.1, 0.6, 0),
+    cex.axis = 0.8,
+    cex.lab = 0.85)
 n_vals = 1:1000                           # increasing sample size
 alpha_vals = c(0.5, 1, 1.5)               # order of the moment
 for(alpha in alpha_vals){
   sample_means = numeric(length = length(n_vals))
+  sample_max_abs = numeric(length = length(n_vals))
+ 
   for (n in n_vals) {
+    set.seed(n)
     x = rcauchy(n = n, location = 0, scale = 1)
-    sample_means[n] = mean(abs(x)^alpha)  # compute alpha-th order mean
+    sample_means[n] = mean(abs(x)^alpha)  # compute alpha-th order moment
+    sample_max_abs[n] = max(abs(x))
   }
   plot(n_vals, sample_means, type = "l", col = "#D55E00", lwd = 2,
        xlab = "sample size (n)", ylab = expression(bar(abs(X[n])^alpha)),
        main = bquote(paste(alpha, " = ", .(alpha))),
        cex.main = 1.4)
 }
+
+plot(n_vals, sample_max_abs, type = "l", col = "#0072B2", lwd = 2,
+       xlab = "sample size (n)", ylab = "Maximum absolute Sample observation",
+       cex.main = 1.4)
+
+
 
 ```   
